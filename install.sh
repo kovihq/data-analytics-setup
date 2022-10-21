@@ -13,7 +13,6 @@ if [ -d ~/.oh-my-zsh ]; then
  	echo "oh-my-zsh is not installed"
 fi
 
-
 # Ensure brew working on m1
 echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
 exec zsh -l
