@@ -12,7 +12,6 @@ if [ -d ~/.oh-my-zsh ]; then
     sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
  	echo "oh-my-zsh is not installed"
 fi
-chsh -s $(which zsh) # Configure zsh as standard shell
 
 
 # Ensure brew working on m1
@@ -93,3 +92,5 @@ cd ~/Repositories
 
 gh repo clone kovihq/datamart
 gh repo clone kovihq/data-pipeline
+
+chsh -s $(which zsh) # Configure zsh as standard shell
