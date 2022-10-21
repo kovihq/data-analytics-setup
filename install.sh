@@ -15,7 +15,7 @@ fi
 
 # Ensure brew working on m1
 echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
-exec zsh -l
+source ~/.zprofile
 
 # Install miniconda
 
