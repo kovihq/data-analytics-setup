@@ -5,8 +5,13 @@ sudo echo "Successfully authenticated for elevated privileges."
 # Install brew
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" <<< ''
 
-# Install oh-my-zsh
-sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+# Install oh-my-zsh if not already installed
+if [ -d ~/.oh-my-zsh ]; then
+	echo "oh-my-zsh is installed"
+ else
+    sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+ 	echo "oh-my-zsh is not installed"
+fi
 chsh -s $(which zsh) # Configure zsh as standard shell
 
 
@@ -84,6 +89,7 @@ gh ssh-key add -t "Macbook Kovi" ~/.ssh/gh_ssh_key.pub
 
 # Configure git repositories
 mkdir ~/Repositories
+cd ~/Repositories
 
 gh repo clone kovihq/datamart
 gh repo clone kovihq/data-pipeline
