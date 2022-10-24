@@ -29,12 +29,27 @@ brew install npm
 # Install sql-formatter
 npm install -g sql-formatter@11.0.1
 # Install VSCode
-brew install --cask visual-studio-code 
+brew install --cask visual-studio-code
+brew install jq
+
+# Change default csv editor to VSCode
+brew install duti
+duti -s code .csv all
+
+
 # Install vscode extensions
 code --install-extension brunoventura.sqltools-athena-driver
 code --install-extension eamodio.gitlens
 code --install-extension donjayamanne.githistory
 code --install-extension streetsidesoftware.code-spell-checker
+code --install-extension ms-vsliveshare.vsliveshare
+code --install-extension randomfractalsinc.vscode-data-preview
+
+# Configure sqltools
+
+usersettingspath="~/Library/Application Support/Code/User/settings.json"
+cat $usersettingspath | 
+
 brew install gh # Install GitHub CLI
 
 # Create a github auth
