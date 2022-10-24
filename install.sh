@@ -65,7 +65,7 @@ do
     [[ $invalid_token > 0 ]] && \
         echo "A new code is being generated." && \
         rm -f ~/.gh_auth.log && \
-        sh -c 'echo Y | gh auth login -p ssh  -w -s "admin:public_key" -h github.com &> ~/.gh_auth.log &' && \
+        sh -c 'echo Y | gh auth login -p https  -w -s "admin:public_key" -h github.com &> ~/.gh_auth.log &' && \
         sleep 1 && \
         code=$(tail -3 ~/.gh_auth.log | \
             grep "one-time" | \
@@ -82,12 +82,12 @@ do
 done
 
 # Configure ssh for GitHub
-ssh-keygen -t rsa -b 4096 -C "$gituser" -f ~/.ssh/gh_ssh_key -P ""
-gh ssh-key add -t "Macbook Kovi" ~/.ssh/gh_ssh_key.pub
+gh auth setup-git
 
 # Configure git repositories
 mkdir ~/Repositories
 cd ~/Repositories
+
 
 gh repo clone kovihq/datamart
 gh repo clone kovihq/data-pipeline
