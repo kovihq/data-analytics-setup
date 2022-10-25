@@ -48,9 +48,46 @@ code --install-extension randomfractalsinc.vscode-data-preview
 # Configure sqltools
 
 usersettingspath="~/Library/Application Support/Code/User/settings.json"
-cat $usersettingspath | 
 
-brew install gh # Install GitHub CLI
+# Get AWS Access
+while :
+do
+  echo -n "Please enter your accessKeyId: "
+  read accesskeyid
+  echo -n "Please enter your secretAccessKey: "
+  read secretaccesskey
+
+  echo " "
+  echo "AccessKeyId: $accesskeyid."
+  echo "SecretAccessKey: $secretaccesskey."
+  echo " "
+  echo "Is your information correct? Press Y for yes N for no "
+  read answer
+  if [[ ${answer:0:1} =~ ^[Yy]$ ]]; then
+    break
+  fi
+  echo ""
+done
+
+# Update settings.json
+tmp=$(mktemp)
+jq --arg accessKeyId "$accesskeyid" \
+--arg secretAccessKey "$secretaccesskey" \
+'."sqltools.connections"=[
+    {
+        "previewLimit": 50,
+        "driver": "driver.athena",
+        "name": "Athena Prod",
+        "workgroup": "primary",
+        "accessKeyId": $accessKeyId,
+        "secretAccessKey": $secretAccessKey,
+        "region": "us-east-1"
+    }
+] | 
+."sqltools.useNodeRuntime"= true' $usersettingspath > "$tmp" && mv "$tmp" $usersettingspath
+
+# Install GitHub CLI
+brew install gh 
 
 # Create a github auth
 while :
