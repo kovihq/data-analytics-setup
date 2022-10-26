@@ -15,9 +15,12 @@ if [ -d ~/.oh-my-zsh ]; then
  	echo "oh-my-zsh is not installed"
 fi
 
+source ~/.zshrc
+
 # Ensure brew working on m1
 echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
 # source ~/.zprofile
+
 
 # Install miniconda
 echo "Install miniconda"
