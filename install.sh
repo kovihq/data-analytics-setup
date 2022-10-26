@@ -17,7 +17,7 @@ fi
 
 # Ensure brew working on m1
 echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
-source ~/.zprofile
+# source ~/.zprofile
 
 # Install miniconda
 echo "Install miniconda"
@@ -28,9 +28,9 @@ bash ~/miniconda.sh -b -p ~/miniconda
 
 # Create Miniconda
 echo "Create miniconda env"
-conda create -n kovi_prod python=3 -y
-conda install -n kovi_prod -c conda-forge awscli -y
-conda install -n kovi_prod boto3 -y
+~/miniconda/bin/conda create -n kovi_prod python=3 -y
+~/miniconda/bin/conda install -n kovi_prod -c conda-forge awscli -y
+~/miniconda/bin/conda install -n kovi_prod boto3 -y
 
 # Install npm
 echo "Install npm"
