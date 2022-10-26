@@ -29,11 +29,13 @@ bash ~/miniconda.sh -b -p ~/miniconda
 
 ~/miniconda/bin/conda init zsh
 
+source ~/.zshrc
+
 # Create Miniconda
 echo "Create miniconda env"
-~/miniconda/bin/conda create -n kovi_prod python=3 -y
-~/miniconda/bin/conda install -n kovi_prod -c conda-forge awscli -y
-~/miniconda/bin/conda install -n kovi_prod boto3 -y
+conda create -n kovi_prod python=3 -y
+conda install -n kovi_prod -c conda-forge awscli -y
+conda install -n kovi_prod boto3 -y
 
 # Install npm
 echo "Install npm"
