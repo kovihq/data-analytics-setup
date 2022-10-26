@@ -98,7 +98,7 @@ do
   then
     break
   fi
-  echo "Error logging."
+  echo "Error logging ($access)."
   echo "Try again."
 
 done
