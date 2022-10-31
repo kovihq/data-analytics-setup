@@ -129,7 +129,7 @@ jq --arg accessKeyId "$accesskeyid" \
         "region": $Region
     }
 ] | 
-."sqltools.useNodeRuntime"= true' $usersettingspath > "$tmp" && mv "$tmp" $usersettingspath
+."sqltools.useNodeRuntime"= true' "$usersettingspath" > "$tmp" && mv "$tmp" "$usersettingspath"
 
 conda deactivate
 
