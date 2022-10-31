@@ -124,7 +124,7 @@ jq --arg accessKeyId "$accesskeyid" \
         "region": $Region
     }
 ] | 
-."sqltools.useNodeRuntime"= true' $usersettingspath > "$tmp" && mv "$tmp" $usersettingspath
+."sqltools.useNodeRuntime"= true' "$usersettingspath" > "$tmp" && mv "$tmp" "$usersettingspath"
 
 conda deactivate
 
@@ -134,6 +134,7 @@ brew install gh
 
 # Create a github auth
 echo "Configure GitHub CLI"
+rm -f ~/.gh_auth.log
 while :
 do
     [[ -f ~/.gh_auth.log ]] && \
