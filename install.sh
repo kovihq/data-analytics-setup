@@ -1,198 +1,141 @@
+#!/bin/bash
+
+# This script sets up a Python 3.11 dev environment using asdf,
+# configures git with SSH for GitHub, installs VSCode, minimal dependencies,
+# Docker Desktop, and configures AWS CLI with SSO profiles.
+
 echo "This program requires elevated privileges to run, use your MacBook password."
-# Get elevated privileges for this session
 sudo echo "Successfully authenticated for elevated privileges."
 
-# Install brew
-echo "Install brew"
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" <<< ''
+# Install Homebrew (if not present)
+if ! command -v brew &> /dev/null; then
+  echo "Installing Homebrew..."
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
 
 # Install oh-my-zsh if not already installed
-echo "Install oh-my-zsh"
 if [ -d ~/.oh-my-zsh ]; then
-	echo "oh-my-zsh is installed"
- else
-    sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
- 	echo "oh-my-zsh is not installed"
+  echo "oh-my-zsh is installed"
+else
+  echo "Installing oh-my-zsh..."
+  sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+fi
+source ~/.zshrc
+
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+
+# Install asdf version manager
+if ! command -v asdf &> /dev/null; then
+  echo "Installing asdf..."
+  brew install asdf
+  echo -e '\n. $(brew --prefix asdf)/libexec/asdf.sh' >> ~/.zshrc
+  source ~/.zshrc
 fi
 
-source ~/.zshrc
+# Install Python plugin and Python 3.11 via asdf
+echo "Setting up Python 3.11 with asdf..."
+asdf plugin-add python || true
+asdf install python 3.11.11
+asdf global python 3.11.11
 
-# Ensure brew working on m1
-echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
-# source ~/.zprofile
-
-
-# Install miniconda
-echo "Install miniconda"
-curl https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh -o ~/miniconda.sh
-bash ~/miniconda.sh -b -p ~/miniconda
-
-~/miniconda/bin/conda init zsh
-
-source ~/.zshrc
-
-# Create Miniconda
-echo "Create miniconda env"
-conda create -n kovi_prod python=3 -y
-conda install -n kovi_prod -c conda-forge awscli -y
-conda install -n kovi_prod boto3 -y
-
-# Install npm
-echo "Install npm"
-brew install npm
-
-# Install sql-formatter
-echo "Install sql-formatter"
-npm install -g sql-formatter@11.0.1
+# Install pip and sqlfluff
+echo "Installing sqlfluff..."
+pip install --upgrade pip
+pip install sqlfluff
 
 # Install VSCode
-echo "Install VSCode"
+echo "Installing VSCode..."
 brew install --cask visual-studio-code
-brew install jq
 
-# Change default csv editor to VSCode
-echo "Change default csv editor to VSCode"
-brew install duti
-duti -s code .csv all
+# Install VSCode devcontainer extension
+code --install-extension ms-vscode-remote.remote-containers
+code --install-extension sqlfluff.sqlfluff
 
+# Install Docker Desktop
+echo "Installing Docker Desktop..."
+brew install --cask docker
 
-# Install vscode extensions
-echo "Install vscode extensions"
-code --install-extension brunoventura.sqltools-athena-driver
-code --install-extension eamodio.gitlens
-code --install-extension donjayamanne.githistory
-code --install-extension streetsidesoftware.code-spell-checker
-code --install-extension ms-vsliveshare.vsliveshare
-code --install-extension randomfractalsinc.vscode-data-preview
+read -p "Enter your personal github email for SSH key generation: " user_email
+read -p "Enter your username for git configuration: " git_user_name
 
-# Configure sqltools
-echo "Configure sqltools"
-usersettingspath=~/Library/Application\ Support/Code/User/settings.json
-if [ ! -f $usersettingspath ]
-then
-    touch $usersettingspath
-    echo "{}" > $usersettingspath
+# Generate SSH key for GitHub if not present
+if [ ! -f ~/.ssh/id_ed25519 ]; then
+  echo "Generating new SSH key for GitHub..."
+  ssh-keygen -t ed25519 -C "$user_email"
+  eval "$(ssh-agent -s)"
+  ssh-add ~/.ssh/id_ed25519
+  pbcopy < ~/.ssh/id_ed25519.pub
+  echo "Public key copied to clipboard."
+  echo "Please add your public key (~/.ssh/id_ed25519.pub) to your GitHub account."
+  open https://github.com/settings/keys
 fi
 
-conda activate kovi_prod
+# Test SSH connection to GitHub
+echo "Testing SSH connection to GitHub..."
+ssh -T git@github.com || echo "SSH connection failed. Please ensure your key is added to GitHub."
 
-# Get AWS Access
-while :
-do
-  echo -n "Please enter your accessKeyId: "
-  read accesskeyid
-  echo -n "Please enter your secretAccessKey: "
-  read secretaccesskey
-  echo -n "Please enter your region: "
-  read region
+# Configure git user info
+if ! git config --global user.name &> /dev/null; then
+  echo "Configuring git user.name and user.email..."
+  git config --global user.name "$git_user_name"
+  git config --global user.email "$user_email"
+fi
 
-  echo " "
-  echo "AccessKeyId: $accesskeyid."
-  echo "SecretAccessKey: $secretaccesskey."
-  echo "Region: $region."
-  echo " "
-  
-  aws configure set aws_access_key_id $accesskeyid
-  aws configure set aws_secret_access_key $secretaccesskey
-  aws configure set region $region
+# Install AWS CLI
+if ! command -v aws &> /dev/null; then
+  echo "Installing AWS CLI..."
+  brew install awscli
+fi
 
-  tmp=$(mktemp)
-  aws athena start-query-execution \
-      --query-string "SELECT 1" \
-      --work-group "primary" \
-      --query-execution-context Database=cflogsdatabase,Catalog=AwsDataCatalog &> $tmp
+# Configure AWS CLI profiles
+echo "Configuring AWS CLI profiles..."
+mkdir -p ~/.aws
+cat > ~/.aws/config <<'EOF'
+[profile prd]
+sso_start_url = https://kovi-aws.awsapps.com/start/#
+sso_region = us-east-1
+region = us-east-1
+output = json
+sso_account_id = 766251973294
+sso_role_name = PowerUserAccess
 
-  access=$(perl -pe 's/\n//' $tmp | awk -F"[()]" '{print $2}')
+[profile dev]
+sso_start_url = https://kovi-aws.awsapps.com/start/#
+sso_region = us-east-1
+region = us-east-1
+output = json
+sso_account_id = 230230295059
+sso_role_name = PowerUserAccess
+EOF
 
-  if [[ $access != "AccessDeniedException" && $access != "UnrecognizedClientException" ]]; 
-  then
-    break
-  fi
-  echo "Error logging ($access)."
-  echo "Try again."
+# Validate AWS CLI SSO login and profile access
+echo "Validating AWS CLI SSO login for 'prd' profile..."
+aws sso login --profile prd
+aws sts get-caller-identity --profile prd
 
-done
+echo "Validating AWS CLI SSO login for 'dev' profile..."
+aws sso login --profile dev
+aws sts get-caller-identity --profile dev
 
-# Update settings.json
-tmp=$(mktemp)
-jq --arg accessKeyId "$accesskeyid" \
---arg secretAccessKey "$secretaccesskey" \
---arg Region "$region" \
-'."sqltools.connections"=[
-    {
-        "previewLimit": 50,
-        "driver": "driver.athena",
-        "name": "Athena Prod",
-        "workgroup": "primary",
-        "accessKeyId": $accessKeyId,
-        "secretAccessKey": $secretAccessKey,
-        "region": $Region
-    }
-] | 
-."sqltools.useNodeRuntime"= true' "$usersettingspath" > "$tmp" && mv "$tmp" "$usersettingspath"
+# Set zsh as the default shell
+if [ "$SHELL" != "$(which zsh)" ]; then
+  echo "Setting zsh as your default shell..."
+  chsh -s "$(which zsh)"
+fi
 
-conda deactivate
+# Add AWS SSO login aliases to .zshrc if not present
+ZSHRC="$HOME/.zshrc"
+if [ ! -f "$ZSHRC" ]; then
+  touch "$ZSHRC"
+fi
+if ! grep -q "alias prd=\"aws sso login --profile prd\"" "$ZSHRC"; then
+  echo "alias prd=\"aws sso login --profile prd\"" >> "$ZSHRC"
+fi
+if ! grep -q "alias dev=\"aws sso login --profile dev\"" "$ZSHRC"; then
+  echo "alias dev=\"aws sso login --profile dev\"" >> "$ZSHRC"
+fi
 
-# Install GitHub CLI
-echo "Install GitHub CLI"
-brew install gh 
+echo "Setup complete! Python 3.11, asdf, VSCode, sqlfluff, Docker Desktop, AWS CLI, SSH for GitHub, and zsh as your default shell are ready."
 
-# Create a github auth
-echo "Configure GitHub CLI"
-rm -f ~/.gh_auth.log
-while :
-do
-    [[ -f ~/.gh_auth.log ]] && \
-        has_file=1 || \
-        has_file=0
-    [[ ($has_file > 0) && $(tail -2 ~/.gh_auth.log | grep "expired_token") ]] && \
-        expired_token=1 ||
-        expired_token=0
-    [[ ($has_file > 0) && $(tail -2 ~/.gh_auth.log | grep "Logged in") ]] && \
-        authenticated=1 ||
-        authenticated=0
-    [[ ((($has_file == 0)) || (($expired_token > 0))) ]] && \
-        invalid_token=1 || \
-        invalid_token=0
-
-    [[ $authenticated == 1 ]] && \
-        echo $(tail -2 ~/.gh_auth.log | grep "Logged in" | tail -1) && \
-        gituser=$(tail -2 ~/.gh_auth.log | grep "Logged in" | tail -1 | cut -d " " -f 5) && \
-        rm ~/.gh_auth.log && \
-        break
-
-    [[ $expired_token > 0 ]] && \
-        printf "Your GitHub token has expired. "
-
-    [[ $invalid_token > 0 ]] && \
-        echo "A new code is being generated." && \
-        rm -f ~/.gh_auth.log && \
-        sh -c 'echo Y | gh auth login -p https  -w -s "admin:public_key" -h github.com &> ~/.gh_auth.log &' && \
-        sleep 1 && \
-        code=$(tail -3 ~/.gh_auth.log | \
-            grep "one-time" | \
-            tail -1 | \
-            rev | \
-            cut -c 1-9 | \
-            rev ) && \
-        echo "Paste the following code on your browser: $code" && \
-        printf "%s" $code | pbcopy && \
-        open https://github.com/login/device
-
-    sleep 1
-
-done
-
-# Configure ssh for GitHub
-gh auth setup-git
-
-# Configure git repositories
-echo "Configure git repositories"
-mkdir ~/Repositories
-cd ~/Repositories
-
-
-gh repo clone kovihq/datamart
-gh repo clone kovihq/data-pipeline
-
-chsh -s $(which zsh) # Configure zsh as standard shell
+echo "Restarting zsh shell to apply changes..."
+exec zsh
