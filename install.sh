@@ -34,7 +34,7 @@ fi
 
 # Install Python plugin and Python 3.11 via asdf
 echo "Setting up Python 3.11 with asdf..."
-asdf plugin-add python || true
+asdf plugin add python || true
 asdf install python 3.11.11
 asdf global python 3.11.11
 
